@@ -1,0 +1,30 @@
+#################################################################
+#
+# Bash script for  finding IOWAIT and CPU load from Top and Uptime command using BC command
+# Author : Aravind
+#
+#################################################################
+
+# Command to check the CPU-IOWAIT percentage  usage from Top command
+usage=`top -b -n 1 | head -n 3 | grep -i CPU* | awk '{print $6}' | cut -d% -f1`
+uptime1=`uptime | sed 's/.*load average: //' | awk -F\, '{print $1}'`
+#Threshold set for Top command "usage" variable
+ALERT=40
+
+# Threshold to check for Load average from uptime comand
+up_threshold=100
+
+# Memory checks:
+
+MEM_TOTAL=`free | fgrep "Mem:" | awk '{print $2}'`;
+MEM_USED=`free | fgrep "/+ buffers/cache" | awk '{print $3}'`;
+mem=$(($MEM_USED*100/$MEM_TOTAL))
+#mem=`free | grep Mem | awk '{print $3/$2 * 100.0}'`
+mem_threshold=90
+
+if([ "`echo "$usage >= $ALERT" | bc`" == "1" ] || [ "`echo "$uptime1 >= $up_threshold" | bc`" == "1" ] || [ "`echo "$mem >= $mem_threshold" | bc`" == "1" ]); then
+echo "`echo $HOSTNAME` has high load and the current load is at $uptime1 with a memory usuage of $mem"
+exit 2
+else
+echo  "OK - The load looks like normal on the node - `echo $HOSTNAME`"
+exit 0
